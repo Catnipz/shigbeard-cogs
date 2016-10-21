@@ -1,0 +1,8 @@
+{
+	"AUTHOR" : "Shigbeard",
+	"SHORT" : "Rate users with custom emoji!",
+	"DESCRIPTION" : "Allows users to rate other users using emoji.\nOnly custom emoji is supported at this time.",
+	"DISABLED" : false,
+	"NAME" : "Rate",
+	"INSTALL_MSG" : "Thanks for installing the Rate cog. Commands are as follows:\n\n [p]rate <@user> <custom emoji> - Rates a user with emoji.\n[p]ratings <@user> - Displays ratings for a user.\n\nReminder: Default unicode emoji are not supported at this time."
+}
