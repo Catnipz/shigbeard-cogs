@@ -217,8 +217,8 @@ class Rate:
                     ctx.message.mentions[0]
                 except AttributeError:
                     msg = "Invalid argument provided! (AttributeError)"
-                except TypeError:
-                    msg = "Invalid argument provided! (TypeError)"
+                except IndexError:
+                    msg = "Invalid argument provided! (You didn't mention a user!)"
                 except NameError: #Virtually everything it could be, idk what it actually is.
                     msg = "Invalid argument provided! (NameError)"
                 else:
@@ -231,9 +231,14 @@ class Rate:
                         userratings = self.Ratings[arg.server.id][arg.id]
                         msg = "**Ratings for {}**\n\n".format(arg.name)
                         count = 0
+                        temp_ratings = []
                         for k in userratings:
-                            msg += "{} x **_{}_**, ".format(k, str(userratings[k]['count']))
                             count += userratings[k]['count'] or 0
+                            toappend = [ k, userratings[k]['count'] ]
+                            temp_ratings.append(toappend)
+                        temp_ratings = sorted(temp_ratings, key=lambda emote: emote[1], reverse=True)
+                        for k in temp_ratings:
+                            msg += "{} x **_{}_**, ".format(k[0], str(k[1]))
                         msg += "\n\n Total Ratings: *{}*".format(count)
         else:
             try:
@@ -244,9 +249,14 @@ class Rate:
                 userratings = self.Ratings[server.id][author.id]
                 msg = "**Your ratings**\n\n"
                 count = 0
+                temp_ratings = []
                 for k in userratings:
-                    msg += "{} x **_{}_**, ".format(k, str(userratings[k]['count']))
                     count += userratings[k]['count'] or 0
+                    toappend = [ k, userratings[k]['count'] ]
+                    temp_ratings.append(toappend)
+                temp_ratings = sorted(temp_ratings, key=lambda emote: emote[1], reverse=True)
+                for k in temp_ratings:
+                    msg += "{} x **_{}_**, ".format(k[0], str(k[1]))
                 msg += "\n\n Total Ratings: *{}*".format(count)
         try:
             msg
