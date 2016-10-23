@@ -44,7 +44,7 @@ class Rate:
 
             if author.id in self.Ratings[server.id][user.id][k]["rated_by"]:
                 has_rated = self.Ratings[server.id][user.id][k]
-        if isinstance(has_rated, bool) or self.settings[server.id]["UNLIMITED_RATINGS"] == 1:
+        if ( has_rated is False ) or ( self.settings[server.id]["UNLIMITED_RATINGS"] == 1 ):
             self.Ratings[server.id][user.id][emoji]["count"] += 1
             self.Ratings[server.id][user.id][emoji]["rated_by"][str(time.perf_counter())] = author.id
             self._save_ratings()
@@ -96,7 +96,7 @@ class Rate:
                         #msg = "Rated {} {}".format(user.name, emoji)
                         msg = self._apply_rating(ctx, user, emoji)
                     else:
-                        msg = "Woah there, slow down friend! Wait {} more seconds!".format(str(self.antispam[server.id][author.id] - seconds))
+                        msg = "Woah there, slow down friend! Wait {} more seconds!".format(str(self.settings[server.id]['RATE_DELAY'] - seconds))
                 else:
                     self.antispam[server.id][author.id] = int(time.perf_counter())
                     #msg = "Rated {} {}".format(user.name, emoji)
