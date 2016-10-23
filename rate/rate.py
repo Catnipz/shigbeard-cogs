@@ -44,7 +44,7 @@ class Rate:
 
             if author.id in self.Ratings[server.id][user.id][k]["rated_by"]:
                 has_rated = self.Ratings[server.id][user.id][k]
-        if has_rated == False or self.settings[server.id]["UNLIMITED_RATINGS"] == 1:
+        if isinstance(has_rated, bool) or self.settings[server.id]["UNLIMITED_RATINGS"] == 1:
             self.Ratings[server.id][user.id][emoji]["count"] += 1
             self.Ratings[server.id][user.id][emoji]["rated_by"][str(time.perf_counter())] = author.id
             self._save_ratings()
@@ -78,13 +78,14 @@ class Rate:
         author = ctx.message.author
         server = author.server
         emojis = emoji.split(">") # Do not allow emoji spam.
-        emoji = emojis[0] + ">"
+        if emoji.endswith(">"):
+            emoji = emojis[0] + ">"
         try:
             self.settings[server.id]
         except KeyError:
             self.settings[server.id] = deepcopy(default_settings)
             self._save_settings()
-        if emoji.startswith("<") and emoji.endswith(">"):
+        if emoji.startswith("<:") and emoji.endswith(">"):
             if author != user:
                 if server.id not in self.antispam:
                     self.antispam[server.id] = {} # Sanity check.
@@ -95,7 +96,7 @@ class Rate:
                         #msg = "Rated {} {}".format(user.name, emoji)
                         msg = self._apply_rating(ctx, user, emoji)
                     else:
-                        msg = "Woah there, slow down friend! Wait {} more seconds!".format(str(3 - seconds))
+                        msg = "Woah there, slow down friend! Wait {} more seconds!".format(str(self.antispam[server.id][author.id] - seconds))
                 else:
                     self.antispam[server.id][author.id] = int(time.perf_counter())
                     #msg = "Rated {} {}".format(user.name, emoji)
@@ -116,19 +117,143 @@ class Rate:
                 msg = "Updated Rating for {} to {}".format(user.name, emoji)
             await self.bot.say(msg)
 
-    @commands.command(no_pm=True)
-    async def ratings(self, user : discord.Member):
-        """Display ratings for a user.
+    @commands.command(pass_context=True, no_pm=True)
+    async def ratings(self, ctx, arg=None, top : int=10):
+        """Display ratings for a user. Valid arguments are below:
 
-        Takes  @mention for <user>."""
-        userratings = self.Ratings[user.server.id][user.id]
-        msg = "**Ratings for {}**\n\n".format(user.name)
-        count = 0
-        for k in userratings:
-            msg += "{} x **_ {} _**, ".format(k, str(userratings[k]['count']))
-            count += userratings[k]['count'] or 0
-        msg += "\n\n Total Ratings: *{}*".format(str(count))
-        await self.bot.say(msg)
+        - @username : Display that user's ratings
+        - leaderboard : Display rankings for all recorded ratings.
+            - Accepts another argument, <top> as the ammount to show.
+        - :emoji: : Display rankings for that emoji.
+            - Accepts another argument, <top> as the ammount to show.
+        - help : This text silly!
+
+        If no argument is given, we will assume you want your ratings.
+        """
+        server = ctx.message.server
+        author = ctx.message.author
+        if arg != None: # I've received an argument! YAY!!!
+            if isinstance(arg, str) and arg == "leaderboard": # Get the leaderboard son!
+                #await self.bot.say("This feature isn't ready yet! Try again later.")
+                try:
+                    self.Ratings[server.id]
+                except KeyError:
+                    msg = "There are no ratings in this server!"
+                else:
+                    msg = "```py\n"
+                    temp_ratings = []
+                    if top < 1:
+                        top = 10
+                    for userid in self.Ratings[server.id]:
+                        user = server.get_member(userid)
+                        try:
+                            user.name
+                        except AttributeError:
+                            pass
+                        else:
+                            count = 0
+                            for emoji in self.Ratings[server.id][userid]:
+                                count += self.Ratings[server.id][userid][emoji]['count']
+                            toappend = [user.name, count]
+                            temp_ratings.append(toappend)
+                    lboard = sorted(temp_ratings, key=lambda entry: entry[1], reverse=True)
+                    topten = lboard[:top]
+                    highscore = ""
+                    place = 1
+                    for acc in topten:
+                        highscore += (str(place)).ljust(len(str(top))+2)
+                        highscore += ("\""+acc[0]+"\" ").ljust(23-len(str(acc[1])))
+                        highscore += str(acc[1]) + "\n"
+                        place += 1
+                    msg += highscore + "```"
+                    if msg:
+                        if len(highscore) >= 1985:
+                            msg = "The leaderboard is too big to be displayed. Try with a lower <top> argument."
+            elif isinstance(arg, str) and arg.startswith("<:") and arg.endswith(">"): # I've been given an emoji
+                args = arg.split(">") # Do not allow emoji spam.
+                if arg.endswith(">"):
+                    arg = args[0] + ">"
+                try:
+                    self.Ratings[server.id]
+                except KeyError:
+                    msg = "There are no ratings in this server!"
+                else:
+                    msg = "```py\n"
+                    temp_ratings = []
+                    if top < 1:
+                        top = 10
+                    for userid in self.Ratings[server.id]:
+                        user = server.get_member(userid)
+                        try:
+                            user.name
+                        except AttributeError:
+                            pass
+                        else:
+                            try:
+                                self.Ratings[server.id][userid][arg]
+                            except KeyError:
+                                pass
+                            else:
+                                count = self.Ratings[server.id][userid][arg]['count']
+                                toappend = [user.name, count]
+                                temp_ratings.append(toappend)
+                    lboard = sorted(temp_ratings, key=lambda entry: entry[1], reverse=True)
+                    topten = lboard[:top]
+                    highscore = ""
+                    place = 1
+                    for acc in topten:
+                        highscore += (str(place)).ljust(len(str(top))+2)
+                        highscore += ("\""+acc[0]+"\" ").ljust(23-len(str(acc[1])))
+                        highscore += str(acc[1]) + "\n"
+                        place += 1
+                    msg += highscore + "```"
+                    if msg:
+                        if len(highscore) >= 1985:
+                            msg = "The leaderboard is too big to be displayed. Try with a lower <top> argument."
+            elif arg == "help":
+                await send_cmd_help(ctx)
+            else:
+                try:
+                    ctx.message.mentions[0]
+                except AttributeError:
+                    msg = "Invalid argument provided! (AttributeError)"
+                except TypeError:
+                    msg = "Invalid argument provided! (TypeError)"
+                except NameError: #Virtually everything it could be, idk what it actually is.
+                    msg = "Invalid argument provided! (NameError)"
+                else:
+                    arg = ctx.message.mentions[0]
+                    try:
+                        self.Ratings[arg.server.id][arg.id]
+                    except KeyError:
+                        msg = "We cannot find any ratings for {}, sorry!".format(user.name)
+                    else:
+                        userratings = self.Ratings[arg.server.id][arg.id]
+                        msg = "**Ratings for {}**\n\n".format(arg.name)
+                        count = 0
+                        for k in userratings:
+                            msg += "{} x **_{}_**, ".format(k, str(userratings[k]['count']))
+                            count += userratings[k]['count'] or 0
+                        msg += "\n\n Total Ratings: *{}*".format(count)
+        else:
+            try:
+                self.Ratings[server.id][author.id]
+            except KeyError:
+                msg = "We cannot find any ratings for you, sorry!"
+            else:
+                userratings = self.Ratings[server.id][author.id]
+                msg = "**Your ratings**\n\n"
+                count = 0
+                for k in userratings:
+                    msg += "{} x **_{}_**, ".format(k, str(userratings[k]['count']))
+                    count += userratings[k]['count'] or 0
+                msg += "\n\n Total Ratings: *{}*".format(count)
+        try:
+            msg
+        except NameError:
+            pass
+        else:
+            await self.bot.say(msg)
 
     @commands.command(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(manage_server=True)
