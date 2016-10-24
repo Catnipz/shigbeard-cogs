@@ -93,13 +93,11 @@ class Rate:
                     seconds = abs(self.antispam[server.id][author.id] - int(time.perf_counter()))
                     if seconds >= self.settings[server.id]["RATE_DELAY"]:
                         self.antispam[server.id][author.id] = int(time.perf_counter())
-                        #msg = "Rated {} {}".format(user.name, emoji)
                         msg = self._apply_rating(ctx, user, emoji)
                     else:
                         msg = "Woah there, slow down friend! Wait {} more seconds!".format(str(self.settings[server.id]['RATE_DELAY'] - seconds))
                 else:
                     self.antispam[server.id][author.id] = int(time.perf_counter())
-                    #msg = "Rated {} {}".format(user.name, emoji)
                     msg = self._apply_rating(ctx, user, emoji)
             else:
                 msg = "Sorry, you cannot rate yourself!"
@@ -112,9 +110,9 @@ class Rate:
             # Do nothing
         else:
             if msg == 1:
-                msg = "Rated {} {}".format(user.name, emoji)
+                msg = "Rated {} {}".format(user.display_name, emoji)
             elif msg == 2:
-                msg = "Updated Rating for {} to {}".format(user.name, emoji)
+                msg = "Updated Rating for {} to {}".format(user.display_name, emoji)
             await self.bot.say(msg)
 
     @commands.command(pass_context=True, no_pm=True)
@@ -134,7 +132,6 @@ class Rate:
         author = ctx.message.author
         if arg != None: # I've received an argument! YAY!!!
             if isinstance(arg, str) and arg == "leaderboard": # Get the leaderboard son!
-                #await self.bot.say("This feature isn't ready yet! Try again later.")
                 try:
                     self.Ratings[server.id]
                 except KeyError:
@@ -147,14 +144,14 @@ class Rate:
                     for userid in self.Ratings[server.id]:
                         user = server.get_member(userid)
                         try:
-                            user.name
+                            user.display_name
                         except AttributeError:
                             pass
                         else:
                             count = 0
                             for emoji in self.Ratings[server.id][userid]:
                                 count += self.Ratings[server.id][userid][emoji]['count']
-                            toappend = [user.name, count]
+                            toappend = [user.display_name, count]
                             temp_ratings.append(toappend)
                     lboard = sorted(temp_ratings, key=lambda entry: entry[1], reverse=True)
                     topten = lboard[:top]
@@ -162,7 +159,7 @@ class Rate:
                     place = 1
                     for acc in topten:
                         highscore += (str(place)).ljust(len(str(top))+2)
-                        highscore += ("\""+acc[0]+"\" ").ljust(23-len(str(acc[1])))
+                        highscore += ("\""+acc[0]+"\" ").ljust(35-len(str(acc[1])))
                         highscore += str(acc[1]) + "\n"
                         place += 1
                     msg += highscore + "```"
@@ -185,7 +182,7 @@ class Rate:
                     for userid in self.Ratings[server.id]:
                         user = server.get_member(userid)
                         try:
-                            user.name
+                            user.display_name
                         except AttributeError:
                             pass
                         else:
@@ -195,7 +192,7 @@ class Rate:
                                 pass
                             else:
                                 count = self.Ratings[server.id][userid][arg]['count']
-                                toappend = [user.name, count]
+                                toappend = [user.display_name, count]
                                 temp_ratings.append(toappend)
                     lboard = sorted(temp_ratings, key=lambda entry: entry[1], reverse=True)
                     topten = lboard[:top]
@@ -203,7 +200,7 @@ class Rate:
                     place = 1
                     for acc in topten:
                         highscore += (str(place)).ljust(len(str(top))+2)
-                        highscore += ("\""+acc[0]+"\" ").ljust(23-len(str(acc[1])))
+                        highscore += ("\""+acc[0]+"\" ").ljust(35-len(str(acc[1])))
                         highscore += str(acc[1]) + "\n"
                         place += 1
                     msg += highscore + "```"
@@ -226,10 +223,10 @@ class Rate:
                     try:
                         self.Ratings[arg.server.id][arg.id]
                     except KeyError:
-                        msg = "We cannot find any ratings for {}, sorry!".format(user.name)
+                        msg = "We cannot find any ratings for {}, sorry!".format(user.display_name)
                     else:
                         userratings = self.Ratings[arg.server.id][arg.id]
-                        msg = "**Ratings for {}**\n\n".format(arg.name)
+                        msg = "**Ratings for {}**\n\n".format(arg.display_name)
                         count = 0
                         temp_ratings = []
                         for k in userratings:
@@ -276,7 +273,7 @@ class Rate:
         try:
             self.Ratings[user.server.id][user.id] = {}
             self._save_ratings()
-            msg = "{}'s ratings have been wiped clean!".format(user.name)
+            msg = "{}'s ratings have been wiped clean!".format(user.display_name)
         except KeyError:
             msg = "Unable to wipe ratings, we don't have any ratings saved for this server yet!"
         await self.bot.say(msg)
