@@ -1,8 +1,8 @@
 {
 	"AUTHOR" : "Shigbeard",
 	"SHORT" : "Rate users with custom emoji!",
-	"DESCRIPTION" : "Allows users to rate other users using emoji.\nOnly custom emoji is supported at this time.",
+	"DESCRIPTION" : "Allows users to rate other users using emoji.\nUnicode emoji supported thanks to the emoji lib, see https://pypi.python.org/pypi/emoji/ or run `pip3 install emoji`",
 	"DISABLED" : false,
 	"NAME" : "Rate",
-	"INSTALL_MSG" : "Thanks for installing the Rate cog. Commands are as follows:\n\n [p]rate <@user> <custom emoji> - Rates a user with emoji.\n[p]ratings <@user> - Displays ratings for a user.\n\nReminder: Default unicode emoji are not supported at this time."
+	"INSTALL_MSG" : "Thanks for installing the Rate cog.\nIn order for it to function, it needs the emoji package. Please run `pip3 install emoji` before loading this cog.\n\n**Commands**\n[p]rate <@user> <:emoji:> | Rate a user using an emoji on the server.\n[p]ratings [@user|leaderboard|:emoji:|help] | Displays ratings. Takes some argunments...\n  [p]ratings | Displays your ratings.\n  [p]ratings <@user> | Displays @user's ratings.\n  [p]ratings <:emoji:> | Shows a leaderboard of people who have received :emoji: as their rating.\n  [p]ratings <leaderboard> | Shows a leaderboard of overall ratings.\n  [p]ratings <help> | Shows help for this command.\n[p]wiperatings <@user> [:emoji:] [#ammount] | (Requires manage_server or bot owner) Wipes the ratings of @user, with optional arguments to specify a specific rating and amount of ratings.\n[p]ratingset | Provides some settings to tweak the rate cog on your server."
 }
