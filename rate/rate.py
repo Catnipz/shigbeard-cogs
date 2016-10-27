@@ -64,27 +64,39 @@ class Rate:
             serverratings["count"] = 0
             serverratings["rated_by"] = {}
 
-        has_rated = False
+        has_rated = []
 
         for k in self.Ratings[server.id][user.id]:
 
-            if author.id in self.Ratings[server.id][user.id][k]["rated_by"]:
-                has_rated = self.Ratings[server.id][user.id][k]
-        if ( has_rated is False ) or ( self.settings[server.id]["UNLIMITED_RATINGS"] == 1 ):
+            if author.id in self.Ratings[server.id][user.id][k]["rated_by"].values():
+                has_rated.append(self.Ratings[server.id][user.id][k])
+        if ( has_rated == [] ) or ( self.settings[server.id]["UNLIMITED_RATINGS"] == 1 ):
             self.Ratings[server.id][user.id][givenemoji]["count"] += 1
             self.Ratings[server.id][user.id][givenemoji]["rated_by"][str(time.time())] = author.id
             self._save_ratings()
             return 1
         else:
-            if has_rated == serverratings:
-                for key in has_rated["rated_by"]:
-                    if has_rated["rated_by"][key] == author.id:
-                        has_rated["rated_by"].pop(key)
-                        has_rated["count"] -= 1
-                self.self.Ratings[server.id][user.id][givenemoji]["count"] += 1
-                self.Ratings[server.id][user.id][givenemoji]["rated_by"][str(time.time())] = author.id
-                self._save_ratings()
-                return 2
+            temp_has_rated = deepcopy(has_rated)
+            i = 0
+            for e in temp_has_rated:
+                #keep in mind we are iterating through a copy, but editing the master.
+                for key in e["rated_by"]:
+                    if has_rated[i]["rated_by"][key] == author.id:
+                        has_rated[i]["rated_by"].pop(key)
+                        has_rated[i]["count"] -= 1
+                    i += 1
+
+            ### CLEANUP ###
+            self.Ratings[server.id][user.id][givenemoji]["count"] += 1
+            self.Ratings[server.id][user.id][givenemoji]["rated_by"][str(time.time())] = author.id
+            temp_rateemoji = deepcopy(self.Ratings[server.id][user.id])
+            for e in temp_rateemoji:
+                if temp_rateemoji[e]["count"] <= 0:
+                    self.Ratings[server.id][user.id].pop(e)
+            if self.Ratings[server.id][user.id] == {}:
+                self.Ratings[server.id].pop(user.id)
+            self._save_ratings()
+            return 2
         
         
 
@@ -134,7 +146,7 @@ class Rate:
                         self.antispam[server.id][author.id] = int(time.perf_counter())
                         msg = self._apply_rating(ctx, user, givenemoji)
                     else:
-                        msg = "Woah there, slow down friend! Wait {} more seconds!".format(str(self.settings[server.id]['RATE_DELAY'] - seconds))
+                        msg = "**Warning!** `You are trying to rate people too quickly!`\n\nPlease wait **_{}_** more seconds!".format(str(self.settings[server.id]['RATE_DELAY'] - seconds)) 
                 else:
                     self.antispam[server.id][author.id] = int(time.perf_counter())
                     msg = self._apply_rating(ctx, user, givenemoji)
@@ -142,9 +154,13 @@ class Rate:
                 msg = "Sorry, you cannot rate yourself!"
         else:
             msg = "**Error!** `Either that wasn't an emoji, or you tried to use an unsupported unicode emoji.`\n\nYou gave me : _{}_".format(emoji.emojize(givenemoji))
-            msg += "\nThis server's emoji: "
+            msg2 = ""
             for e in validemojis:
-                msg += e + " "
+                msg2 += e + " "
+            if msg2 != "":
+                msg += "\nThis server's emoji: "
+                msg += msg2
+
         try:
             msg
         except NameError:
@@ -152,9 +168,9 @@ class Rate:
             # Do nothing
         else:
             if msg == 1:
-                msg = "Rated {} {}".format(user.display_name, emoji.emojize(givenemoji))
+                msg = "Rated **{}** {}".format(user.display_name, emoji.emojize(givenemoji))
             elif msg == 2:
-                msg = "Updated Rating for {} to {}".format(user.display_name, emoji.emojize(givenemoji))
+                msg = "Updated Rating for **{}** to {}".format(user.display_name, emoji.emojize(givenemoji))
             await self.bot.say(msg)
 
     @commands.command(pass_context=True, no_pm=True)
@@ -183,7 +199,7 @@ class Rate:
                 try:
                     self.Ratings[server.id]
                 except KeyError:
-                    msg = "There are no ratings in this server!"
+                    msg = "**Error!** `This server hasn't got any ratings for any of it's users!`"
                 else:
                     msg = "```py\n"
                     temp_ratings = []
@@ -213,12 +229,12 @@ class Rate:
                     msg += highscore + "```"
                     if msg:
                         if len(highscore) >= 1985:
-                            msg = "The leaderboard is too big to be displayed. Try with a lower <top> argument."
+                            msg = "**Error!** `The leaderboard is too big to be displayed.`\n\nTry again with a lower [top] argument."
             elif isinstance(arg, str) and (arg in validemojis or arg in emoji.EMOJI_UNICODE): # I've been given an emoji
                 try:
                     self.Ratings[server.id]
                 except KeyError:
-                    msg = "There are no ratings in this server!"
+                    msg = "**Error!** `This server hasn't got any ratings for any of it's users!`"
                 else:
                     msg = "```py\n"
                     temp_ratings = []
@@ -251,24 +267,20 @@ class Rate:
                     msg += highscore + "```"
                     if msg:
                         if len(highscore) >= 1985:
-                            msg = "The leaderboard is too big to be displayed. Try with a lower <top> argument."
+                            msg = "**Error!** `The leaderboard is too big to be displayed.`\n\nTry again with a lower [top] argument."
             elif arg == "help":
                 await send_cmd_help(ctx)
             else:
                 try:
                     ctx.message.mentions[0]
-                except AttributeError:
-                    msg = "Invalid argument provided! (AttributeError)"
                 except IndexError:
-                    msg = "Invalid argument provided! (You didn't mention a user or a valid command!)"
-                except NameError: #Virtually everything it could be, idk what it actually is.
-                    msg = "Invalid argument provided! (NameError)"
+                    msg = "**Error!** `Invalid Argument: We couldn't find a valid command, emoji, or mentioned user.`\n\nUnsure of the commands you can use? Try `{}ratings help`".format(ctx.prefix)
                 else:
                     arg = ctx.message.mentions[0]
                     try:
                         self.Ratings[arg.server.id][arg.id]
                     except KeyError:
-                        msg = "We cannot find any ratings for {}, sorry!".format(user.display_name)
+                        msg = "**Error!** `We cannot find any ratings for {}, sorry!`".format(user.display_name)
                     else:
                         userratings = self.Ratings[arg.server.id][arg.id]
                         msg = "**Ratings for {}**\n\n".format(arg.display_name)
@@ -286,7 +298,7 @@ class Rate:
             try:
                 self.Ratings[server.id][author.id]
             except KeyError:
-                msg = "We cannot find any ratings for you, sorry!"
+                msg = "**Error!** `You do not appear to have any ratings.`"
             else:
                 userratings = self.Ratings[server.id][author.id]
                 msg = "**Your ratings**\n\n"
@@ -359,7 +371,7 @@ class Rate:
             else:
                 msg = "**Error!** `Invalid argument type for amount, expected a number.`"
         elif emoji_to_wipe and not (emoji_to_wipe in validemojis or emoji_to_wipe in emoji.EMOJI_UNICODE):
-            msg = "**Error** `Invalid emoji specified, that doesn't appear to be a server emoji or a unicode emoji.`"
+            msg = "**Error!** `Invalid emoji specified, that doesn't appear to be a server emoji or a supported unicode emoji.`"
         else:
             try:
                 self.Ratings[user.server.id].pop(user.id)
@@ -398,7 +410,7 @@ class Rate:
             self.settings[server.id]
             self._save_settings()
         self.settings[server.id]["RATE_DELAY"] = delay
-        await self.bot.say("Enforced delay between consecutive ratings is now {} seconds".format(str(delay)))
+        await self.bot.say("Enforced delay between consecutive ratings is now **{}** seconds".format(str(delay)))
         self._save_settings()
 
     @ratingset.command(pass_context=True)
@@ -412,7 +424,7 @@ class Rate:
             self.settings[server.id]
             self._save_settings()
         if unlimited < 0 or unlimited > 1:
-            await self.bot.say("Value is out of range! Please enter 0 for limited ratings, or 1 for unlimited.")
+            await self.bot.say("**Error!** `Value is out of range! Please enter 0 for limited ratings, or 1 for unlimited.`")
         else:
             self.settings[server.id]["UNLIMITED_RATINGS"] = unlimited
             if unlimited == 1:
