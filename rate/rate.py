@@ -280,7 +280,7 @@ class Rate:
                     try:
                         self.Ratings[arg.server.id][arg.id]
                     except KeyError:
-                        msg = "**Error!** `We cannot find any ratings for {}, sorry!`".format(user.display_name)
+                        msg = "**Error!** `We cannot find any ratings for {}, sorry!`".format(arg.display_name)
                     else:
                         userratings = self.Ratings[arg.server.id][arg.id]
                         msg = "**Ratings for {}**\n\n".format(arg.display_name)
