@@ -1,0 +1,10 @@
+{
+	"AUTHOR" : "Shigbeard",
+	"SHORT" : "View info for game servers that respond to A2S_INFO requests, like Counter-Strike",
+	"DESCRIPTION" : "Allows users to view info about game servers such as Garry's Mod, Counter-Strike, Half-Life Deathmatch, and more.\nRequires python-valve, a library on github... and beautifulsoup4.",
+	"DISABLED" : false,
+	"NAME" : "GSInfo",
+	"INSTALL_MSG" : "Thanks for installing the gsinfo cog. All pre-requisits should be installed, if not, run this command on your server:\n`pip install -U https://github.com/Shigbeard/python-valve/archive/master.zip`\n\n**Commands**\n```[p]gsinfo [<ip:port> | <ip> (port) | <url>] | Get info about a game server.\n[p]gsplayers [<ip:port> | <ip> (port) | <url>] | Displays info about players on a server.```\nPlease note, there are some issues with listing players that occurs when there is a player with a funky steam name. I do my best to filter out dodgy names, but some slip through the cracks and they make Discord angry. If you get HTTP 400 errors or BAD_REQUEST errors, thats why.",
+	"TAGS" : ["games","utility","tools","gaming","stats","utilities","statistics","info","tool"],
+	"REQUIREMENTS" : ["-U https://github.com/Shigbeard/python-valve/archive/master.zip","beautifulsoup4"]
+}
